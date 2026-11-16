@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../dashboard/presentation/screens/dashboard_screen.dart';
 import '../widgets/email_field.dart';
 import '../widgets/login_button.dart';
 import '../widgets/login_footer.dart';
@@ -31,12 +32,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _login() {
     if (_formKey.currentState!.validate()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Login UI ready. Authentication will be connected later.',
-          ),
-        ),
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const DashboardScreen()),
       );
     }
   }
@@ -54,11 +52,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const SizedBox(height: 20),
-
                   const LoginHeader(),
-
                   const SizedBox(height: 36),
-
                   Container(
                     padding: const EdgeInsets.all(26),
                     decoration: BoxDecoration(
@@ -85,9 +80,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               color: Color(0xFF172B4D),
                             ),
                           ),
-
                           const SizedBox(height: 8),
-
                           const Text(
                             'Sign in to access your documents.',
                             style: TextStyle(
@@ -95,13 +88,9 @@ class _LoginScreenState extends State<LoginScreen> {
                               color: Color(0xFF718096),
                             ),
                           ),
-
                           const SizedBox(height: 28),
-
                           EmailField(controller: _emailController),
-
                           const SizedBox(height: 20),
-
                           PasswordField(
                             controller: _passwordController,
                             obscurePassword: _obscurePassword,
@@ -111,9 +100,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               });
                             },
                           ),
-
                           const SizedBox(height: 12),
-
                           RememberMe(
                             value: _rememberMe,
                             onChanged: (value) {
@@ -122,17 +109,13 @@ class _LoginScreenState extends State<LoginScreen> {
                               });
                             },
                           ),
-
                           const SizedBox(height: 16),
-
                           LoginButton(onPressed: _login),
                         ],
                       ),
                     ),
                   ),
-
                   const SizedBox(height: 28),
-
                   const LoginFooter(),
                 ],
               ),
