@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../documents/presentation/screens/documents_screen.dart';
 import '../widgets/dashboard_header.dart';
 import '../widgets/dashboard_stat_card.dart';
 import '../widgets/dashboard_quick_actions.dart';
@@ -19,6 +20,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildCurrentPage() {
     if (_currentIndex == 0) {
       return _buildHomeDashboard();
+    }
+
+    if (_currentIndex == 1) {
+      return const DocumentsScreen();
     }
 
     final pages = ['Home', 'My Documents', 'Approvals', 'My Profile'];
@@ -109,38 +114,40 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6FA),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        title: const Text(
-          'DMS Mobile',
-          style: TextStyle(
-            color: Color(0xFF172B4D),
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        actions: [
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(
-              Icons.notifications_none_rounded,
-              color: Color(0xFF172B4D),
-            ),
-          ),
-          const Padding(
-            padding: EdgeInsets.only(right: 16),
-            child: CircleAvatar(
-              radius: 18,
-              backgroundColor: Color(0xFFE8EEFF),
-              child: Icon(
-                Icons.person_outline_rounded,
-                color: Color(0xFF2457D6),
+      appBar: _currentIndex == 1
+          ? null
+          : AppBar(
+              backgroundColor: Colors.white,
+              elevation: 0,
+              title: const Text(
+                'DMS Mobile',
+                style: TextStyle(
+                  color: Color(0xFF172B4D),
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
+              actions: [
+                IconButton(
+                  onPressed: () {},
+                  icon: const Icon(
+                    Icons.notifications_none_rounded,
+                    color: Color(0xFF172B4D),
+                  ),
+                ),
+                const Padding(
+                  padding: EdgeInsets.only(right: 16),
+                  child: CircleAvatar(
+                    radius: 18,
+                    backgroundColor: Color(0xFFE8EEFF),
+                    child: Icon(
+                      Icons.person_outline_rounded,
+                      color: Color(0xFF2457D6),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ),
-        ],
-      ),
       body: SafeArea(child: _buildCurrentPage()),
       bottomNavigationBar: DashboardBottomNavigation(
         currentIndex: _currentIndex,
