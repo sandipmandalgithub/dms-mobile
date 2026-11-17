@@ -8,6 +8,7 @@ class DocumentModel extends DocumentEntity {
     required super.fileSize,
     required super.uploadedAt,
     required super.status,
+    super.filePath,
   });
 
   factory DocumentModel.fromJson(Map<String, dynamic> json) {
@@ -21,6 +22,7 @@ class DocumentModel extends DocumentEntity {
         (status) => status.name == json['status'],
         orElse: () => DocumentStatus.pending,
       ),
+      filePath: json['filePath'] as String?,
     );
   }
 
@@ -32,6 +34,7 @@ class DocumentModel extends DocumentEntity {
       'fileSize': fileSize,
       'uploadedAt': uploadedAt.toIso8601String(),
       'status': status.name,
+      'filePath': filePath,
     };
   }
 }

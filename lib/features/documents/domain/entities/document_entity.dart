@@ -7,6 +7,7 @@ class DocumentEntity {
   final String fileSize;
   final DateTime uploadedAt;
   final DocumentStatus status;
+  final String? filePath;
 
   const DocumentEntity({
     required this.id,
@@ -15,5 +16,6 @@ class DocumentEntity {
     required this.fileSize,
     required this.uploadedAt,
     required this.status,
+    this.filePath,
   });
 }
