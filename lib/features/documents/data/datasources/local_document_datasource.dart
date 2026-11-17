@@ -1,40 +1,53 @@
-import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
-import 'package:path/path.dart' as path;
-import 'package:path_provider/path_provider.dart';
+import 'package:hive_ce_flutter/hive_flutter.dart';
 
 class LocalDocumentDataSource {
+  static const String _boxName = 'document_files';
+
+  static Future<Box<dynamic>>? _boxFuture;
+
+  Future<Box<dynamic>> _getBox() {
+    _boxFuture ??= Hive.openBox<dynamic>(_boxName);
+    return _boxFuture!;
+  }
+
   Future<String> saveFile(PlatformFile file) async {
-    final directory = await getApplicationDocumentsDirectory();
-
-    final storageDirectory = Directory(path.join(directory.path, 'documents'));
-
-    if (!await storageDirectory.exists()) {
-      await storageDirectory.create(recursive: true);
-    }
-
-    final fileName =
-        '${DateTime.now().microsecondsSinceEpoch}_${path.basename(file.name)}';
-
-    final savedFilePath = path.join(storageDirectory.path, fileName);
+    final box = await _getBox();
 
     final fileBytes = await file.readAsBytes();
 
-    await File(savedFilePath).writeAsBytes(fileBytes, flush: true);
+    final storageKey = '${DateTime.now().microsecondsSinceEpoch}_${file.name}';
 
-    return savedFilePath;
+    await box.put(storageKey, fileBytes.toList());
+
+    return storageKey;
   }
 
-  Future<void> deleteFile(String filePath) async {
-    final file = File(filePath);
+  Future<Uint8List?> readFile(String storageKey) async {
+    final box = await _getBox();
 
-    if (await file.exists()) {
-      await file.delete();
+    final storedBytes = box.get(storageKey);
+
+    if (storedBytes == null) {
+      return null;
+    }
+
+    return Uint8List.fromList(List<int>.from(storedBytes));
+  }
+
+  Future<void> deleteFile(String storageKey) async {
+    final box = await _getBox();
+
+    if (box.containsKey(storageKey)) {
+      await box.delete(storageKey);
     }
   }
 
-  Future<bool> fileExists(String filePath) async {
-    return File(filePath).exists();
+  Future<bool> fileExists(String storageKey) async {
+    final box = await _getBox();
+
+    return box.containsKey(storageKey);
   }
 }

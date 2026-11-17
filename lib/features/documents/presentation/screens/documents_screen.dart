@@ -9,6 +9,8 @@ import '../../domain/usecases/delete_document.dart';
 import '../../domain/usecases/get_documents.dart';
 import '../../domain/usecases/upload_document.dart';
 import '../providers/document_provider.dart';
+import 'image_preview_screen.dart';
+import 'pdf_preview_screen.dart';
 
 class DocumentsScreen extends StatefulWidget {
   const DocumentsScreen({super.key});
@@ -19,24 +21,25 @@ class DocumentsScreen extends StatefulWidget {
 
 class _DocumentsScreenState extends State<DocumentsScreen> {
   late final DocumentProvider _provider;
+  late final LocalDocumentDataSource _localDataSource;
 
   @override
   void initState() {
     super.initState();
 
     final remoteDataSource = DocumentRemoteDataSourceImpl();
-    final localDataSource = LocalDocumentDataSource();
+    _localDataSource = LocalDocumentDataSource();
 
     final repository = DocumentRepositoryImpl(
       remoteDataSource: remoteDataSource,
-      localDataSource: localDataSource,
+      localDataSource: _localDataSource,
     );
 
     _provider = DocumentProvider(
       getDocuments: GetDocuments(repository),
       uploadDocument: UploadDocument(repository),
       deleteDocument: DeleteDocument(repository),
-      localDataSource: localDataSource,
+      localDataSource: _localDataSource,
     );
 
     _provider.loadDocuments();
@@ -115,6 +118,69 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
         ),
       );
     }
+  }
+
+  Future<void> _openDocument(DocumentEntity document) async {
+    final storageKey = document.filePath;
+
+    if (storageKey == null || storageKey.isEmpty) {
+      _showMessage('This demo document has no saved file.');
+      return;
+    }
+
+    try {
+      final fileBytes = await _localDataSource.readFile(storageKey);
+
+      if (!mounted) return;
+
+      if (fileBytes == null || fileBytes.isEmpty) {
+        _showMessage('Document file not found in local storage.');
+        return;
+      }
+
+      final fileType = document.fileType.toLowerCase();
+
+      if (fileType == 'pdf') {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) =>
+                PdfPreviewScreen(fileBytes: fileBytes, fileName: document.name),
+          ),
+        );
+      } else if (['jpg', 'jpeg', 'png'].contains(fileType)) {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ImagePreviewScreen(
+              fileBytes: fileBytes,
+              fileName: document.name,
+            ),
+          ),
+        );
+      } else if ([
+        'doc',
+        'docx',
+        'xls',
+        'xlsx',
+        'ppt',
+        'pptx',
+        'txt',
+      ].contains(fileType)) {
+        _showMessage('Opening this document format is not available yet.');
+      } else {
+        _showMessage('Unsupported document format.');
+      }
+    } catch (error) {
+      if (!mounted) return;
+
+      _showMessage('Unable to open document: $error');
+    }
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   String _formatFileSize(int bytes) {
@@ -357,6 +423,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
       elevation: 1,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ListTile(
+        onTap: () => _openDocument(document),
         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         leading: Container(
           width: 46,
@@ -405,10 +472,20 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
             ],
           ),
         ),
-        trailing: IconButton(
-          onPressed: () => _deleteDocument(document),
-          icon: const Icon(Icons.delete_outline, color: Colors.red),
-          tooltip: 'Delete Document',
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              onPressed: () => _openDocument(document),
+              icon: const Icon(Icons.open_in_new, color: Colors.blue),
+              tooltip: 'Open Document',
+            ),
+            IconButton(
+              onPressed: () => _deleteDocument(document),
+              icon: const Icon(Icons.delete_outline, color: Colors.red),
+              tooltip: 'Delete Document',
+            ),
+          ],
         ),
       ),
     );

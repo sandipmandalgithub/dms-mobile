@@ -35,7 +35,10 @@ class DocumentProvider extends ChangeNotifier {
 
     try {
       _documents = await getDocuments();
-    } catch (error) {
+    } catch (error, stackTrace) {
+      debugPrint('LOAD DOCUMENT ERROR: $error');
+      debugPrintStack(stackTrace: stackTrace);
+
       _errorMessage = 'Unable to load documents.';
     } finally {
       _isLoading = false;
@@ -50,7 +53,11 @@ class DocumentProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      debugPrint('UPLOAD STEP 1: Saving physical file');
+
       savedPath = await localDataSource.saveFile(file);
+
+      debugPrint('UPLOAD STEP 2: Physical file saved: $savedPath');
 
       final savedDocument = DocumentEntity(
         id: document.id,
@@ -62,18 +69,27 @@ class DocumentProvider extends ChangeNotifier {
         filePath: savedPath,
       );
 
+      debugPrint('UPLOAD STEP 3: Saving document metadata');
+
       await uploadDocument(savedDocument);
+
+      debugPrint('UPLOAD STEP 4: Metadata saved successfully');
+
       await loadDocuments();
-    } catch (error) {
+    } catch (error, stackTrace) {
+      debugPrint('DOCUMENT UPLOAD ERROR: $error');
+      debugPrintStack(stackTrace: stackTrace);
+
       if (savedPath != null) {
         try {
           await localDataSource.deleteFile(savedPath);
-        } catch (_) {
-          // Preserve the original upload error.
+          debugPrint('UPLOAD CLEANUP: Temporary file deleted');
+        } catch (cleanupError) {
+          debugPrint('UPLOAD CLEANUP ERROR: $cleanupError');
         }
       }
 
-      _errorMessage = 'Unable to save the document.';
+      _errorMessage = 'Unable to save the document: $error';
       notifyListeners();
     }
   }
@@ -82,7 +98,10 @@ class DocumentProvider extends ChangeNotifier {
     try {
       await deleteDocument(id);
       await loadDocuments();
-    } catch (error) {
+    } catch (error, stackTrace) {
+      debugPrint('DELETE DOCUMENT ERROR: $error');
+      debugPrintStack(stackTrace: stackTrace);
+
       _errorMessage = 'Unable to delete document.';
       notifyListeners();
     }
