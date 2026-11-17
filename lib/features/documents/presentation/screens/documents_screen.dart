@@ -1,3 +1,4 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 import '../../data/datasources/document_remote_datasource.dart';
@@ -23,6 +24,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
     super.initState();
 
     final dataSource = DocumentRemoteDataSourceImpl();
+
     final repository = DocumentRepositoryImpl(remoteDataSource: dataSource);
 
     _provider = DocumentProvider(
@@ -38,6 +40,77 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
   void dispose() {
     _provider.dispose();
     super.dispose();
+  }
+
+  // Pick a single document from device.
+  Future<void> _pickDocument() async {
+    try {
+      final file = await FilePicker.pickFile(
+        type: FileType.custom,
+        allowedExtensions: [
+          'pdf',
+          'doc',
+          'docx',
+          'xls',
+          'xlsx',
+          'ppt',
+          'pptx',
+          'txt',
+          'jpg',
+          'jpeg',
+          'png',
+        ],
+      );
+
+      if (file == null) {
+        return;
+      }
+
+      final extension = file.extension?.toUpperCase() ?? 'FILE';
+
+      final fileLength = file.lengthSync() ?? await file.length();
+
+      final document = DocumentEntity(
+        id: DateTime.now().microsecondsSinceEpoch.toString(),
+        name: file.name,
+        fileType: extension,
+        fileSize: _formatFileSize(fileLength ?? 0),
+        uploadedAt: DateTime.now(),
+        status: DocumentStatus.pending,
+      );
+
+      await _provider.addDocument(document);
+
+      if (!mounted) return;
+
+      if (_provider.errorMessage == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${file.name} added successfully.')),
+        );
+      } else {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(_provider.errorMessage!)));
+      }
+    } catch (error) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unable to select the document.')),
+      );
+    }
+  }
+
+  // Format file size.
+  String _formatFileSize(int bytes) {
+    if (bytes < 1024) {
+      return '$bytes B';
+    }
+
+    if (bytes < 1024 * 1024) {
+      return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    }
+
+    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
   }
 
   @override
@@ -62,7 +135,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
             return const Center(child: CircularProgressIndicator());
           }
 
-          if (_provider.errorMessage != null) {
+          if (_provider.errorMessage != null && _provider.documents.isEmpty) {
             return Center(child: Text(_provider.errorMessage!));
           }
 
@@ -85,7 +158,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
         },
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: _showUploadMessage,
+        onPressed: _pickDocument,
         backgroundColor: const Color(0xFF2457D6),
         foregroundColor: Colors.white,
         icon: const Icon(Icons.upload_file_rounded),
@@ -94,6 +167,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
     );
   }
 
+  // Delete confirmation.
   void _confirmDelete(DocumentEntity document) {
     showDialog<void>(
       context: context,
@@ -103,7 +177,9 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
           content: Text('Are you sure you want to delete ${document.name}?'),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
+              onPressed: () {
+                Navigator.pop(dialogContext);
+              },
               child: const Text('Cancel'),
             ),
             TextButton(
@@ -118,16 +194,9 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
       },
     );
   }
-
-  void _showUploadMessage() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Real file upload will be implemented in the next step.'),
-      ),
-    );
-  }
 }
 
+// Document Card Widget.
 class _DocumentCard extends StatelessWidget {
   final DocumentEntity document;
   final VoidCallback onDelete;
